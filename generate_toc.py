@@ -1,42 +1,44 @@
 import os
-import markdown
-from markdown.treeprocessors import Treeprocessor
-from markdown.extensions.toc import TocExtension
+from datetime import datetime
 
 
-class TocGenerator(Treeprocessor):
-    def run(self, root):
-        headings = []
-        for element in root:
-            if element.tag in ['h1', 'h2', 'h3']:  # Adjust heading levels as needed
-                headings.append({'level': int(element.tag[1]), 'text': element.text, 'id': element.get('id')})
-        return headings
-
-
-def generate_toc_for_file(filepath):
+def generate_toc_for_file(filepath, vault_path):
     with open(filepath, 'r', encoding='utf-8') as file:
-        text = file.read()
-        md = markdown.Markdown(extensions=[TocExtension()])
-        md.treeprocessors.register(TocGenerator(md), 'toc_generator', 10)
-        headings = md.convert(text)
-        return md.treeprocessors['toc_generator'].run(md.parser.root)
+        lines = file.readlines()
+
+    toc = []
+    for line in lines:
+        if line.startswith('#'):
+            # Adjusting according to Obsidian's TOC syntax
+            indent_level = line.count('#') - 1
+            title = line.strip('#').strip()
+            toc.append(('    ' * indent_level) + '- ' + title)
+    return toc
+
+
+def format_note_name_for_link(note_name):
+    # Corrects directory separators for Obsidian's linking syntax without URL encoding spaces
+    return note_name.replace(os.sep, '/')
 
 
 def main(obsidian_vault_path):
-    toc = []
+    toc = ["# Table of Contents", f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"]
     for root, dirs, files in os.walk(obsidian_vault_path):
         for file in files:
             if file.endswith(".md"):
                 filepath = os.path.join(root, file)
-                headings = generate_toc_for_file(filepath)
-                if headings:
-                    toc.append({'file': filepath, 'headings': headings})
+                relative_path = os.path.relpath(filepath, start=obsidian_vault_path)
+                note_name = os.path.splitext(relative_path)[0]
+                note_toc = generate_toc_for_file(filepath, obsidian_vault_path)
+                if note_toc:
+                    toc.append(f"## [[{format_note_name_for_link(note_name)}]]")
+                    toc.extend(note_toc)
+                    toc.append("")  # Add a blank line for better separation
 
-    # Print or save the TOC
-    for entry in toc:
-        print(f"File: {entry['file']}")
-        for heading in entry['headings']:
-            print(f"  {'#' * heading['level']} {heading['text']}")
+    # Write the TOC to a Markdown file in the vault
+    toc_filename = os.path.join(obsidian_vault_path, 'table_of_contents.md')
+    with open(toc_filename, 'w', encoding='utf-8') as toc_file:
+        toc_file.write('\n'.join(toc))
 
 
 if __name__ == "__main__":
