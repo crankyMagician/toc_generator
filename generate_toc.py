@@ -42,5 +42,5 @@ def main(obsidian_vault_path):
 
 
 if __name__ == "__main__":
-    obsidian_vault_path = r'C:\Users\brian\OneDrive - gowellbenefits.com\Documents\GitHub\Obsidian'  # Update this path
+    obsidian_vault_path = r'path\to\your\obsidian\vault'
     main(obsidian_vault_path)
