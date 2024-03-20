@@ -1,25 +1,21 @@
 import os
 from datetime import datetime
 
-
 def generate_toc_for_file(filepath, vault_path):
     with open(filepath, 'r', encoding='utf-8') as file:
         lines = file.readlines()
 
     toc = []
     for line in lines:
-        if line.startswith('#'):
-            # Adjusting according to Obsidian's TOC syntax
-            indent_level = line.count('#') - 1
+        # Check if the line starts with exactly one '#' to identify H1 headings
+        if line.startswith('# ') and not line.startswith('##'):
             title = line.strip('#').strip()
-            toc.append(('    ' * indent_level) + '- ' + title)
+            toc.append('- ' + title)  # No need for indent_level for H1
     return toc
-
 
 def format_note_name_for_link(note_name):
     # Corrects directory separators for Obsidian's linking syntax without URL encoding spaces
     return note_name.replace(os.sep, '/')
-
 
 def main(obsidian_vault_path):
     toc = ["# Table of Contents", f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"]
@@ -39,7 +35,6 @@ def main(obsidian_vault_path):
     toc_filename = os.path.join(obsidian_vault_path, 'table_of_contents.md')
     with open(toc_filename, 'w', encoding='utf-8') as toc_file:
         toc_file.write('\n'.join(toc))
-
 
 if __name__ == "__main__":
     obsidian_vault_path = r'path\to\your\obsidian\vault'
